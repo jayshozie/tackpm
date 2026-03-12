@@ -1,0 +1,21 @@
+name: DCO Check
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  verify-dco:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run DCO verification
+        uses: christophebedard/dco-check@0.5.0 # latest checker
+        with:
+          python-version: '3.12'
+          args: '--verbose'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
