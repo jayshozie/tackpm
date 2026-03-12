@@ -92,6 +92,11 @@ directories
 7. **build:** the commit touches the `Makefile`
 8. **meta:** the commit touches a file located at the root of the repository
 (e.g. `.clang-format`, `compile_flags.txt`, `.gitignore`, etc.)
+9. **common:** the commit touches cross-cutting utilities or shared data
+structures. These types of files reside at the root of `include/` and/or shared
+utilities in `src/`. If a header is **ONLY** used in a single subsystem (e.g.
+`include/backend.h`) then that commit should use the corresponding (e.g.
+(backend)) scope, not this one.
 
 ---
 
