@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
 #ifndef _BACKEND_H
 # define _BACKEND_H
-#include <state.h>
+#include <state/state.h>
 #include <libpq-fe.h>
 
 typedef enum query_status {

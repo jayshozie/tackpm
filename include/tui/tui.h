@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>. */
 #ifndef _TUI_H
 #define _TUI_H
 #include <notcurses/notcurses.h>
-#include <state.h>
+#include <state/state.h>
 
 enum ui_focus {
 	PANE_LEFT,

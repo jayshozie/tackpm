@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
 #include <string.h>
-#include <state.h>
-#include <backend.h>
+#include <state/state.h>
+#include <backend/backend.h>
 
 static inline void set_state(struct tack_state **s)
 {

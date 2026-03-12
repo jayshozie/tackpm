@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
 #ifndef _LOG_H
 # define _LOG_H
-#include <module.h>
+#include <module/module.h>
 
 /*
  * Use to log errors. Don't put identifiers at the beginning. You don't have to

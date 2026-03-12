@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>. */
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <log.h>
+#include <log/log.h>
 
 void log_error(enum module module, char *errmsg, ...)
 {

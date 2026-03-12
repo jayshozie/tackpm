@@ -14,11 +14,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
-#include <backend.h>
-#include <log.h>
-#include <state.h>
 #include <stdlib.h>
 #include <string.h>
+#include <backend/backend.h>
+#include <log/log.h>
+#include <state/state.h>
 
 /*
  * Gets a comma-separated, null-terminated list of languages, returns an array

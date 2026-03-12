@@ -14,10 +14,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
-#include <state.h>
-#include <tui.h>
-#include <log.h>
-#include <backend.h>
+#include <state/state.h>
+#include <tui/tui.h>
+#include <log/log.h>
+#include <backend/backend.h>
 
 // int main(int argc, char **argv)
 int main(void)

@@ -15,10 +15,10 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
 #include <stdint.h>
-#include <log.h>
 #include <time.h>
 #include <string.h>
-#include <tui.h>
+#include <log/log.h>
+#include <tui/tui.h>
 
 struct nav_node {
 	enum db_entity type; /* CATEGORIES, PROJECTS, or TASKS */

@@ -14,10 +14,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
-#include <state.h>
-#include <log.h>
 #include <stdlib.h>
-#include <backend.h>
+#include <state/state.h>
+#include <log/log.h>
+#include <backend/backend.h>
 #include <string.h>
 
 /* @TODO_GENERAL: ERROR HANDLING
