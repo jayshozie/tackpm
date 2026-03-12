@@ -1,0 +1,88 @@
+name: Bug Report
+description: Report a bug to help us improve tack
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Welcome to the `tack` bug tracker!**
+
+        ⚠️ **STOP! OS SUPPORT WARNING** ⚠️
+        `tack` is strictly supported on **GNU/Linux**. Bug reports produced on macOS, Windows (WSL), or other operating systems will be closed immediately.
+
+        Please fill the form accurately. Thank you for being a part of the development of tack!
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us what you expected to happen.
+      placeholder: Describe the bug...
+    validations:
+      required: true
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: Affected Subsystem
+      options:
+        - TUI (Frontend)
+        - Backend (Database)
+        - State/Logic
+        - Build System (Makefile)
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: os-distro
+    attributes:
+      label: GNU/Linux Distribution
+      placeholder: e.g., Arch Linux, Ubuntu 24.04, Fedora 40, etc.
+    validations:
+      required: true
+  - type: input
+    id: pg-version
+    attributes:
+      label: PostgreSQL Version
+      description: Run 'psql --version'
+      placeholder: e.g., 18.3
+    validations:
+      required: true
+  - type: checkboxes
+    id: pg-daemon-check
+    attributes:
+      label: PostgreSQL Daemon Verification
+      description: tack requires an active database service. We cannot debug system administration issues.
+      options:
+        - label: "I have run `systemctl status postgresql` (or equivalent) and verified the daemon is active and accepting connection."
+          required: true
+  - type: textarea
+    id: env-info
+    attributes:
+      label: Environment Context (Terminal & Multiplexer)
+      description: |
+        Please provide the **name of your terminal emulator** (e.g. Alacritty, GNOME Terminal, KDE Konsole), and whether you're using a **multiplexer** (e.g. tmux, GNU Screen). Also, please include the output of `echo $TERM` and `echo $LANG`.
+      placeholder: |
+        Emulator: Alacritty
+        Multiplexer: tmux
+        TERM=xterm-256color
+        LANG=en_US.UTF-8
+    validations:
+      required: true
+  - type: textarea
+    id: build-info
+    attributes:
+      label: Build & Dependency Information
+      description: |
+        Please provide the exact commit hash you built, the `make` target you used, and your installed version of `notcurses`.
+        (Hint: run `git log -1 --format="%H"` and `notcurses-info | head -n 1`)
+      placeholder: |
+        Commit Hash:
+        Make Target: (e.g., release, debug)
+        Notcurses Version:
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Log Output
+      description: Please copy and paste any log files created by tack.
+      render: shell
