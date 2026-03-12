@@ -1,0 +1,9 @@
+# utilities
+license-helper.md
+utils.sh
+utils/
+
+# build artifacts
+*.o
+*.out
+tack
