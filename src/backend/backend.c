@@ -158,19 +158,19 @@ static inline query_status fetch_categories(PGconn *conn, struct categories *nc)
 	PGresult *res = PQexec(conn, q);
 
 	if (!nc) {
-        log_error(BCKEND, "[fetch_projects: Uninitialized argument: `nc`");
-        status = FAILURE;
-        return status;
+		log_error(BCKEND, "[fetch_projects: Uninitialized argument: `nc`");
+		status = FAILURE;
+		return status;
 	}
 
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-        log_error(BCKEND, "[fetch_categories]: %s", PQerrorMessage(conn));
-        PQclear(res);
-        nc->cate_count = 0;
-        nc->cids = NULL;
-        nc->cate_names = NULL;
-        status = FAILURE;
-        return status;
+		log_error(BCKEND, "[fetch_categories]: %s", PQerrorMessage(conn));
+		PQclear(res);
+		nc->cate_count = 0;
+		nc->cids = NULL;
+		nc->cate_names = NULL;
+		status = FAILURE;
+		return status;
 	}
 
 	nc->cate_count = PQntuples(res);
@@ -200,20 +200,20 @@ static inline query_status fetch_projects(PGconn *conn, struct projects *np)
 	PGresult *res = PQexec(conn, q);
 
 	if (!np) {
-        log_error(BCKEND, "[fetch_projects: Uninitialized argument: `np`");
-        status = FAILURE;
-        return status;
+		log_error(BCKEND, "[fetch_projects: Uninitialized argument: `np`");
+		status = FAILURE;
+		return status;
 	}
 
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-        log_error(BCKEND, "[fetch_projects]: %s", PQerrorMessage(conn));
-        PQclear(res);
-        np->proj_count = 0;
-        np->pids = NULL;
-        np->proj_cids = NULL;
-        np->proj_names = NULL;
-        status = FAILURE;
-        return status;
+		log_error(BCKEND, "[fetch_projects]: %s", PQerrorMessage(conn));
+		PQclear(res);
+		np->proj_count = 0;
+		np->pids = NULL;
+		np->proj_cids = NULL;
+		np->proj_names = NULL;
+		status = FAILURE;
+		return status;
 	}
 
 	np->proj_count = PQntuples(res);
@@ -244,19 +244,19 @@ static inline query_status fetch_languages(PGconn *conn, struct languages *nl)
 	PGresult *res = PQexec(conn, q);
 
 	if (!nl) {
-        log_error(BCKEND, "[fetch_projects: Uninitialized argument: `nl`");
-        status = FAILURE;
-        return status;
+		log_error(BCKEND, "[fetch_projects: Uninitialized argument: `nl`");
+		status = FAILURE;
+		return status;
 	}
 
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-        log_error(BCKEND, "[fetch_projects]: %s", PQerrorMessage(conn));
-        PQclear(res);
-        nl->lang_count = 0;
-        nl->lang_names = NULL;
-        nl->lids = NULL;
-        status = FAILURE;
-        return status;
+		log_error(BCKEND, "[fetch_projects]: %s", PQerrorMessage(conn));
+		PQclear(res);
+		nl->lang_count = 0;
+		nl->lang_names = NULL;
+		nl->lids = NULL;
+		status = FAILURE;
+		return status;
 	}
 
 	nl->lang_count = PQntuples(res);
@@ -287,19 +287,19 @@ static inline query_status fetch_pl_pairs(PGconn *conn, struct pl_pairs *np)
 	PGresult *res = PQexec(conn, q);
 
 	if (!np) {
-        log_error(BCKEND, "[fetch_projects: Uninitialized argument: `np`");
-        status = FAILURE;
-        return status;
+		log_error(BCKEND, "[fetch_projects: Uninitialized argument: `np`");
+		status = FAILURE;
+		return status;
 	}
 
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-        log_error(BCKEND, "[fetch_projects]: %s", PQerrorMessage(conn));
-        PQclear(res);
-        np->projlong_count = 0;
-        np->lids = NULL;
-        np->pids = NULL;
-        status = FAILURE;
-        return status;
+		log_error(BCKEND, "[fetch_projects]: %s", PQerrorMessage(conn));
+		PQclear(res);
+		np->projlong_count = 0;
+		np->lids = NULL;
+		np->pids = NULL;
+		status = FAILURE;
+		return status;
 	}
 
 	np->projlong_count = PQntuples(res);
@@ -328,21 +328,21 @@ static inline query_status fetch_tasks(PGconn *conn, struct tasks *nt)
 	PGresult *res = PQexec(conn, q);
 
 	if (!nt) {
-        log_error(BCKEND, "[fetch_projects: Uninitialized argument: `nt`");
-        status = FAILURE;
-        return status;
+		log_error(BCKEND, "[fetch_projects: Uninitialized argument: `nt`");
+		status = FAILURE;
+		return status;
 	}
 
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-        log_error(BCKEND, "[fetch_projects]: %s", PQerrorMessage(conn));
-        PQclear(res);
-        nt->task_count = 0;
-        nt->task_descs = NULL;
-        nt->task_dones = NULL;
-        nt->task_pids = NULL;
-        nt->tids = NULL;
-        status = FAILURE;
-        return status;
+		log_error(BCKEND, "[fetch_projects]: %s", PQerrorMessage(conn));
+		PQclear(res);
+		nt->task_count = 0;
+		nt->task_descs = NULL;
+		nt->task_dones = NULL;
+		nt->task_pids = NULL;
+		nt->tids = NULL;
+		status = FAILURE;
+		return status;
 	}
 
 	nt->task_count = PQntuples(res);
@@ -472,7 +472,7 @@ static inline query_status fetch_db(PGconn *conn, struct tack_state *s)
  */
 void *db_worker(void *arg)
 {
-	struct tack_state *s = (struct jpm_state *)arg;
+	struct tack_state *s = (struct tack_state *)arg;
 	PGconn *conn = PQconnectdb("dbname=postgres");
 
 	/* @TODO1 */
