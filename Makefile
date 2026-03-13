@@ -11,8 +11,12 @@ LDFLAGS := -pthread
 
 # External Dependencies (Auto-detected via pkg-config)
 DEPS := libpq notcurses
-DEPS_CFLAGS := $(shell pkg-config --cflags $(DEPS) 2>/dev/null)
-DEPS_LDFLAGS := $(shell pkg-config --libs $(DEPS) 2>/dev/null || echo "-lpq -lnotcurses")
+HAS_DEPS := $(shell pkg-config --exists $(DEPS) && echo 'true' || echo 'false')
+ifeq ($(HAS_DEPS),false)
+$(error "FATAL ERROR: Missing required C libraries: $(DEPS) $(HAS_DEPS)")
+endif
+DEPS_CFLAGS := $(shell pkg-config --cflags $(DEPS))
+DEPS_LDFLAGS := $(shell pkg-config --libs $(DEPS))
 
 CFLAGS += $(DEPS_CFLAGS)
 LDFLAGS += $(DEPS_LDFLAGS)
