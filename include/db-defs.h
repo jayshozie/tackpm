@@ -53,10 +53,10 @@ typedef int64_t db_tid;
 #    ifndef TAB_CATEGORY
 #      define TAB_CATEGORY "category"
 #      ifndef CATE_CID_COL
-#        define CATE_CID_COL "name"
+#        define CATE_CID_COL "cid"
 #      endif
 #      ifndef CATE_NAME_COL
-#        define CATE_NAME_COL "cid"
+#        define CATE_NAME_COL "name"
 #      endif
 #    endif
 
@@ -86,10 +86,10 @@ typedef int64_t db_tid;
 #    ifndef TAB_PROJECT_LANGUAGE
 #      define TAB_PROJECT_LANGUAGE "project_language"
 #      ifndef PL_PID_COL
-#        define PL_PID_COL "pid"
+#        define PL_PID_COL "project_id"
 #      endif
 #      ifndef PL_LID_COL
-#        define PL_LID_COL "lid"
+#        define PL_LID_COL "language_id"
 #      endif
 #    endif
 

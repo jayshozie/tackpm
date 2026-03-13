@@ -22,7 +22,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
 struct nav_node {
 	enum db_entity type; /* CATEGORIES, PROJECTS, or TASKS */
-	db_id id;
+	db_id id;			 /* id of the entity */
 };
 
 /* generalized selector struct */
@@ -30,14 +30,14 @@ struct sel_ctx {
 	struct ncselector *widget; /* the notcurses widget */
 	struct nav_node *map;	   /* parallel array of nav_nodes */
 	db_count count;			   /* how many items are currently in the list? */
-	char **opts;
+	char **opts;			   /* what will be written to the screen */
 };
 
 static struct sel_ctx *build_nav_pane(struct ncplane *np, struct tack_state *s)
 {
 	struct sel_ctx *sel;
 	struct ncselector_item *items;
-	db_count total_nodes, curr_idx = 0;
+	db_count curr_idx = 0;
 
 	if (!np || !s)
 		return NULL;
@@ -56,7 +56,7 @@ static struct sel_ctx *build_nav_pane(struct ncplane *np, struct tack_state *s)
 			.type = CATEGORIES,
 			.id = curr_cid,
 		};
-		asprintf(&sel->opts[c], "%s", s->c.cate_names[c]);
+		asprintf(&sel->opts[curr_idx], "%s", s->c.cate_names[c]);
 		items[curr_idx].option = sel->opts[curr_idx];
 		items[curr_idx].desc = NULL;
 		curr_idx++;
@@ -67,15 +67,15 @@ static struct sel_ctx *build_nav_pane(struct ncplane *np, struct tack_state *s)
 					.type = PROJECTS,
 					.id = s->p.pids[p],
 				};
-				asprintf(&sel->opts[p], " %s", s->p.proj_names[p]);
+				asprintf(&sel->opts[curr_idx], " %s", s->p.proj_names[p]);
 				items[curr_idx].option = sel->opts[curr_idx];
 				items[curr_idx].desc = NULL;
 				curr_idx++;
 			}
 		}
 	}
-	items[curr_idx].desc = NULL;
 	items[curr_idx].option = NULL;
+	items[curr_idx].desc = NULL;
 
 	struct ncselector_options opts = {
 		.title = NULL,
@@ -84,28 +84,86 @@ static struct sel_ctx *build_nav_pane(struct ncplane *np, struct tack_state *s)
 		.items = items,
 	};
 	sel->widget = ncselector_create(np, &opts);
+	free(items);
 	return sel;
+}
+
+static inline bool task_matches(struct tack_state *s,
+								db_tid target_tid,
+								struct nav_node *filter)
+{
+	if (!filter)
+		return false;
+	if (filter->type == PROJECTS) {
+		return (s->t.task_pids[target_tid] == filter->id);
+	} else if (filter->type == CATEGORIES) {
+		for (db_count i = 0; i < s->p.proj_count; i++) {
+			if (s->p.pids[i] == s->t.task_pids[target_tid])
+				return (s->p.proj_cids[i] == filter->id);
+		}
+	} else {
+		log_error(
+			MENU,
+			"Something went wrong in task_matches (possibly called from build_task_pane). filter->id : %d | filter->type : %d",
+			filter->id, filter->type);
+	}
+	return false;
 }
 
 static struct sel_ctx *build_task_pane(struct ncplane *np,
 									   struct tack_state *s,
 									   struct nav_node *filter)
 {
+	struct sel_ctx *sel;
+	struct ncselector_item *items;
+	db_count n_tasks, curr_idx = 0;
+	char *done_status;
+
 	if (!np || !s || !filter)
 		return NULL;
 
-	if (filter->type == CATEGORIES) {
-		for (db_count t = 0; t < s->t.task_count; t++) {
-			if (s->t.task_pids[t] == filter->id) {
-			}
-		}
-	} else if (filter->type == PROJECTS) {
-	} else {
-		/* something went wrong */
-		log_error(MENU,
-				  "Something went wrong in build_task_pane. filter.type : %d",
-				  filter->type);
+	/* count first */
+	n_tasks = 0;
+	for (db_count i = 0; i < s->t.task_count; i++) {
+		if (task_matches(s, i, filter))
+			n_tasks++;
 	}
+	sel = malloc(sizeof(struct sel_ctx));
+	if ((sel->count = n_tasks) == 0) {
+		free(sel);
+		return NULL;
+	}
+	sel->map = malloc(sel->count * sizeof(struct nav_node));
+	sel->opts = malloc(sel->count * sizeof(char *));
+	items = malloc((sel->count + 1) * sizeof(struct ncselector_item));
+	for (db_count i = 0; i < s->t.task_count; i++) {
+		done_status = "[ ]";
+		if (task_matches(s, i, filter)) {
+			sel->map[curr_idx] = (struct nav_node){
+				.type = TASKS,
+				.id = s->t.tids[i],
+			};
+			if (s->t.task_dones[i] == true)
+				done_status = "[x]";
+			asprintf(&sel->opts[curr_idx], "%s %s", done_status,
+					 s->t.task_descs[i]);
+			items[curr_idx].option = sel->opts[curr_idx];
+			items[curr_idx].desc = NULL;
+			curr_idx++;
+		}
+	}
+	items[curr_idx].option = NULL;
+	items[curr_idx].desc = NULL;
+
+	struct ncselector_options opts = {
+		.title = NULL,
+		.secondary = NULL,
+		.footer = NULL,
+		.items = items,
+	};
+	sel->widget = ncselector_create(np, &opts);
+	free(items);
+	return sel;
 }
 
 static void destroy_sel(struct sel_ctx *sel)
@@ -113,12 +171,12 @@ static void destroy_sel(struct sel_ctx *sel)
 	if (sel) {
 		ncselector_destroy(sel->widget, NULL);
 		free(sel->map);
+		for (db_count i = 0; i < sel->count; i++) {
+			free(sel->opts[i]);
+		}
+		free(sel->opts);
 		free(sel);
 	}
-	for (db_count i = 0; i < sel->count; i++) {
-		free(sel->opts[i]);
-	}
-	free(sel->opts);
 }
 
 static inline void set_planes(struct notcurses *nc,
@@ -154,16 +212,13 @@ void tui(struct notcurses *nc, struct tack_state *s)
 	char *err;
 	ncinput ni;
 	bool is_up[2];
-	ui_col cursor_y;
-	db_cid active_cid;
-	db_pid active_pid;
-	db_tid active_tid;
 	struct ncplane *sidebar, *main, *std;
 	struct nav_node filter;
 	bool need_rebuild = true;
 	ncplane_options sidebar_opts = { 0 }, main_opts = { 0 };
 	struct sel_ctx *nav_sel = NULL, *task_sel = NULL;
 	enum ui_focus focus = PANE_LEFT;
+	enum state prev_state = STATE_HYDR;
 	struct timespec timer = {
 		.tv_sec = 0,
 		.tv_nsec = 50000000, /* 50 milliseconds */
@@ -188,49 +243,61 @@ void tui(struct notcurses *nc, struct tack_state *s)
 		is_up[1] = s->is_db_up;
 		pthread_mutex_unlock(&s->lock);
 
-		if (!is_up[0]) {
-			/* @TODO1 */
-			break;
+		if (prev_state == STATE_HYDR && local_state == STATE_IDLE) {
+			need_rebuild = true;
 		}
+		prev_state = local_state;
 
-		if (local_state == STATE_HYDR) {
+		if (!is_up[1]) {
+			err = "DATABASE OFFLINE - PRESS 'q' TO QUIT";
+			if (std) {
+				ncplane_dim_yx(std, &y, &x);
+				ncplane_erase(std);
+				ncplane_printf_yx(std, y / 2, (x - strlen(err)) / 2, "%s", err);
+			}
+		} else if (local_state == STATE_HYDR) {
 			err = "LOADING DATABASE...";
-			ncplane_dim_yx(std, &y, &x);
-			ncplane_erase(std);
-			ncplane_printf_yx(std, y / 2, (x - strlen(err)) / 2, "%s", err);
+			if (std) {
+				ncplane_dim_yx(std, &y, &x);
+				ncplane_erase(std);
+				ncplane_printf_yx(std, y / 2, (x - strlen(err)) / 2, "%s", err);
+			}
 		} else if (is_up[1]) {
 			/* @TODO2: */
-			ncplane_erase(sidebar);
-			ncplane_erase(main);
+			if (std)
+				ncplane_erase(std);
+			if (sidebar)
+				ncplane_erase(sidebar);
+			if (main)
+				ncplane_erase(main);
 
 			if (need_rebuild) {
 				pthread_mutex_lock(&s->lock);
-				destroy_sel(nav_sel);
+				if (!nav_sel) {
+					nav_sel = build_nav_pane(sidebar, s);
+				}
 				destroy_sel(task_sel);
-				nav_sel = build_nav_pane(sidebar, s);
-				filter = nav_sel->map[0];
-				task_sel = build_task_pane(main, s, &filter);
-
+				task_sel = NULL;
+				if (nav_sel && nav_sel->count > 0) {
+					const char *sel_str = ncselector_selected(nav_sel->widget);
+					int idx = 0;
+					for (int i = 0; i < nav_sel->count; i++) {
+						if (strcmp(sel_str, nav_sel->opts[i]) == 0) {
+							idx = i;
+							break;
+						}
+					}
+					filter = nav_sel->map[idx];
+					task_sel = build_task_pane(main, s, &filter);
+				}
 				need_rebuild = false;
-				/*
-                 * 1. Lock the thread.
-                 * 2. 
-                 * 3. Write to screen.
-                 * 4. 
-                 * 5. Call pthread_cond_signal(&s->cond); to get the db_worker out of
-                 *    its locked-state.
-                 * 6. Unlock the mutex.
-                 */
 				pthread_mutex_unlock(&s->lock);
 			}
 
-			ncplane_perimeter_rounded(sidebar, 0, 0, 0);
-			ncplane_perimeter_rounded(main, 0, 0, 0);
-		} else {
-			err = "DATABASE OFFLINE - PRESS 'q' TO QUIT";
-			ncplane_dim_yx(std, &y, &x);
-			ncplane_erase(std);
-			ncplane_printf_yx(std, y / 2, (x - strlen(err)) / 2, "%s", err);
+			if (sidebar)
+				ncplane_perimeter_rounded(sidebar, 0, 0, 0);
+			if (main)
+				ncplane_perimeter_rounded(main, 0, 0, 0);
 		}
 
 		notcurses_render(nc);
@@ -238,52 +305,49 @@ void tui(struct notcurses *nc, struct tack_state *s)
 		struct timespec *ts = (local_state == STATE_IDLE) ? NULL : &timer;
 		uint32_t key = notcurses_get(nc, ts, &ni);
 
-		/*
-         * we have to treat it separately. if we include it in the switch-case,
-         * then the last break won't break out of the loop but the switch-case.
-         */
 		if (key == 'q') {
 			pthread_mutex_lock(&s->lock);
 			s->is_running = false;
 			pthread_cond_signal(&s->cond);
 			pthread_mutex_unlock(&s->lock);
 			break;
-		} else if (key != 0) {
+		}
+
+		if (local_state == STATE_IDLE && is_up[1]) {
 			switch (key) {
-			case (0):
-				break;
-			case ('j'):
-				ni.id = NCKEY_DOWN;
-				break;
-			case ('k'):
-				ni.id = NCKEY_UP;
-				break;
-			case ('\e'):
-			case ('h'):
-				ni.id = NCKEY_LEFT;
-				break;
-			case ('\r'):
-			case ('\n'):
-			case ('l'):
-				ni.id = NCKEY_RIGHT;
-				break;
-			default:
-				/* do nothing, we don't know the key, so don't touch it */
-				break;
-			}
-			if (nav_sel && ncselector_offer_input(nav_sel->widget, &ni)) {
-				const char *active = ncselector_selected(nav_sel->widget);
-				for (db_count i = 0; i < nav_sel->count; i++) {
-					if (strcmp(active, nav_sel->opts[i]) == 0) {
-						pthread_mutex_lock(&s->lock);
-						filter = nav_sel->map[i];
-						destroy_sel(task_sel);
-						task_sel = build_task_pane(main, s, filter);
-						pthread_mutex_unlock(&s->lock);
-					}
+			case 'j':
+			case NCKEY_DOWN:
+				if (focus == PANE_LEFT && nav_sel) {
+					ncselector_nextitem(nav_sel->widget);
+					need_rebuild = true;
+				} else if (focus == PANE_RIGHT && task_sel) {
+					ncselector_nextitem(task_sel->widget);
 				}
+				break;
+			case 'k':
+			case NCKEY_UP:
+				if (focus == PANE_LEFT && nav_sel) {
+					ncselector_previtem(nav_sel->widget);
+					need_rebuild = true;
+				} else if (focus == PANE_RIGHT && task_sel) {
+					ncselector_previtem(task_sel->widget);
+				}
+				break;
+			case 'l':
+			case NCKEY_RIGHT:
+			case NCKEY_ENTER:
+			case KEY_ENTER_NL:
+			case KEY_ENTER_CR:
+				if (focus == PANE_LEFT)
+					focus = PANE_RIGHT;
+				break;
+			case 'h':
+			case NCKEY_LEFT:
+			case NCKEY_ESC:
+				if (focus == PANE_RIGHT)
+					focus = PANE_LEFT;
+				break;
 			}
 		}
 	}
-	notcurses_stop(nc);
 }

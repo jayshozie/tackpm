@@ -14,8 +14,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
+/* clang-format off */
 #ifndef _STATE_H
-#define _STATE_H
+#  define _STATE_H
+/* clang-format on */
 #include <stdbool.h>
 #include <libpq-fe.h>
 #include <db-defs.h>
@@ -28,7 +30,7 @@ enum state {
 };
 
 enum db_action {
-    NONE,
+	NONE,
 	INSERT,
 	DELETE,
 	ALTER,
@@ -36,7 +38,7 @@ enum db_action {
 };
 
 enum db_entity {
-    UNSET,
+	UNSET,
 	CATEGORIES,
 	PROJECTS,
 	TASKS,

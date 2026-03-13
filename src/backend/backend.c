@@ -57,7 +57,11 @@ static bool db_exists(PGconn *conn)
 static inline void create_db(PGconn *conn)
 {
 	const char *q = "CREATE DATABASE tack_db";
-	PQexec(conn, q);
+	PGresult *res = PQexec(conn, q);
+	if (PQresultStatus(res) != PGRES_COMMAND_OK)
+		log_error(BCKEND, "Failed to create the database: %s",
+				  PQerrorMessage(conn));
+	PQclear(res);
 }
 
 /* Idempotent. No need for schema checks outside of this. */
@@ -107,7 +111,6 @@ static inline bool is_connection_up(PGconn *conn, struct tack_state **s)
 		pthread_mutex_lock(&(*s)->lock);
 		(*s)->is_db_up = false;
 		pthread_mutex_unlock(&(*s)->lock);
-		PQfinish(conn);
 	}
 	return is_up;
 }
@@ -126,13 +129,13 @@ static inline bool strtobool(char *str)
 
 	if (!str) {
 		goto error;
-	} else if (strcmp(str, "NULL")) {
-		goto error_log;
+	} else if (strcmp(str, "NULL") == 0) {
+		goto error;
 	} else if (*str == 'T' || *str == 't' ||
-			   strcmp(str, "on") || *str == '1') {
+			   strcmp(str, "on") == 0 || *str == '1') {
 		ret = true;
 	} else if (*str == 'F' || *str == 'f' ||
-			   strcmp(str, "off") || *str == '0') {
+			   strcmp(str, "off") == 0 || *str == '0') {
 		ret = false;
 	} else {
 		goto error_log;
@@ -150,15 +153,13 @@ error:
 /* fetches all categories */
 static inline query_status fetch_categories(PGconn *conn, struct categories *nc)
 {
-	char *errmsg;
-	ExecStatusType execstatus;
 	uint8_t cid_col, name_col;
 	query_status status = SUCCESS;
 	const char *q = "SELECT cid, name FROM category ORDER BY cid;";
 	PGresult *res = PQexec(conn, q);
 
 	if (!nc) {
-		log_error(BCKEND, "[fetch_projects: Uninitialized argument: `nc`");
+		log_error(BCKEND, "[fetch_categories]: Uninitialized argument: `nc` ");
 		status = FAILURE;
 		return status;
 	}
@@ -192,15 +193,13 @@ static inline query_status fetch_categories(PGconn *conn, struct categories *nc)
 /* fetch all projects */
 static inline query_status fetch_projects(PGconn *conn, struct projects *np)
 {
-	char *errmsg;
-	ExecStatusType execstatus;
 	uint8_t pid_col, name_col, cid_col;
 	query_status status = SUCCESS;
 	const char *q = "SELECT pid, name, category_id FROM project ORDER BY pid;";
 	PGresult *res = PQexec(conn, q);
 
 	if (!np) {
-		log_error(BCKEND, "[fetch_projects: Uninitialized argument: `np`");
+		log_error(BCKEND, "[fetch_projects]: Uninitialized argument: `np` ");
 		status = FAILURE;
 		return status;
 	}
@@ -218,6 +217,8 @@ static inline query_status fetch_projects(PGconn *conn, struct projects *np)
 
 	np->proj_count = PQntuples(res);
 	np->pids = malloc(np->proj_count * sizeof(db_pid));
+	np->proj_names = malloc(np->proj_count * sizeof(char *));
+	np->proj_cids = malloc(np->proj_count * sizeof(db_cid));
 
 	pid_col = PQfnumber(res, PROJ_PID_COL);
 	name_col = PQfnumber(res, PROJ_NAME_COL);
@@ -236,21 +237,19 @@ static inline query_status fetch_projects(PGconn *conn, struct projects *np)
 /* fetch all languages */
 static inline query_status fetch_languages(PGconn *conn, struct languages *nl)
 {
-	char *errmsg;
-	ExecStatusType execstatus;
 	uint8_t lid_col, name_col;
 	query_status status = SUCCESS;
 	const char *q = "SELECT lid, name FROM language ORDER BY lid;";
 	PGresult *res = PQexec(conn, q);
 
 	if (!nl) {
-		log_error(BCKEND, "[fetch_projects: Uninitialized argument: `nl`");
+		log_error(BCKEND, "[fetch_languages]: Uninitialized argument: `nl` ");
 		status = FAILURE;
 		return status;
 	}
 
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-		log_error(BCKEND, "[fetch_projects]: %s", PQerrorMessage(conn));
+		log_error(BCKEND, "[fetch_languages]: %s", PQerrorMessage(conn));
 		PQclear(res);
 		nl->lang_count = 0;
 		nl->lang_names = NULL;
@@ -260,12 +259,13 @@ static inline query_status fetch_languages(PGconn *conn, struct languages *nl)
 	}
 
 	nl->lang_count = PQntuples(res);
-	nl->lids = malloc(nl->lang_count * sizeof(db_pid));
+	nl->lids = malloc(nl->lang_count * sizeof(db_lid));
+	nl->lang_names = malloc(nl->lang_count * sizeof(char *));
 
 	lid_col = PQfnumber(res, LANG_LID_COL);
 	name_col = PQfnumber(res, LANG_NAME_COL);
-	for (proj_count i = 0; i < (*nl).lang_count; i++) {
-		nl->lids[i] = (db_pid)strtoull(PQgetvalue(res, i, lid_col), NULL, 10);
+	for (lang_count i = 0; i < nl->lang_count; i++) {
+		nl->lids[i] = (db_lid)strtoull(PQgetvalue(res, i, lid_col), NULL, 10);
 		nl->lang_names[i] = strdup(PQgetvalue(res, i, name_col));
 	}
 
@@ -276,10 +276,7 @@ static inline query_status fetch_languages(PGconn *conn, struct languages *nl)
 /* @TODO: Error handling. */
 /* fetch all project-language pairs */
 static inline query_status fetch_pl_pairs(PGconn *conn, struct pl_pairs *np)
-
 {
-	char *errmsg;
-	ExecStatusType execstatus;
 	uint8_t pid_col, lid_col;
 	query_status status = SUCCESS;
 	const char *q =
@@ -287,13 +284,13 @@ static inline query_status fetch_pl_pairs(PGconn *conn, struct pl_pairs *np)
 	PGresult *res = PQexec(conn, q);
 
 	if (!np) {
-		log_error(BCKEND, "[fetch_projects: Uninitialized argument: `np`");
+		log_error(BCKEND, "[fetch_pl_pairs]: Uninitialized argument: `np` ");
 		status = FAILURE;
 		return status;
 	}
 
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-		log_error(BCKEND, "[fetch_projects]: %s", PQerrorMessage(conn));
+		log_error(BCKEND, "[fetch_pl_pairs]: %s", PQerrorMessage(conn));
 		PQclear(res);
 		np->projlong_count = 0;
 		np->lids = NULL;
@@ -303,6 +300,8 @@ static inline query_status fetch_pl_pairs(PGconn *conn, struct pl_pairs *np)
 	}
 
 	np->projlong_count = PQntuples(res);
+	np->pids = malloc(np->projlong_count * sizeof(db_pid));
+	np->lids = malloc(np->projlong_count * sizeof(db_lid));
 
 	pid_col = PQfnumber(res, PL_PID_COL);
 	lid_col = PQfnumber(res, PL_LID_COL);
@@ -319,8 +318,6 @@ static inline query_status fetch_pl_pairs(PGconn *conn, struct pl_pairs *np)
 /* fetch all tasks */
 static inline query_status fetch_tasks(PGconn *conn, struct tasks *nt)
 {
-	char *errmsg;
-	ExecStatusType execstatus;
 	uint8_t tid_col, desc_col, done_col, pid_col;
 	query_status status = SUCCESS;
 	const char *q =
@@ -328,13 +325,13 @@ static inline query_status fetch_tasks(PGconn *conn, struct tasks *nt)
 	PGresult *res = PQexec(conn, q);
 
 	if (!nt) {
-		log_error(BCKEND, "[fetch_projects: Uninitialized argument: `nt`");
+		log_error(BCKEND, "[fetch_tasks]: Uninitialized argument: `nt` ");
 		status = FAILURE;
 		return status;
 	}
 
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-		log_error(BCKEND, "[fetch_projects]: %s", PQerrorMessage(conn));
+		log_error(BCKEND, "[fetch_tasks]: %s", PQerrorMessage(conn));
 		PQclear(res);
 		nt->task_count = 0;
 		nt->task_descs = NULL;
@@ -346,6 +343,10 @@ static inline query_status fetch_tasks(PGconn *conn, struct tasks *nt)
 	}
 
 	nt->task_count = PQntuples(res);
+	nt->tids = malloc(nt->task_count * sizeof(db_tid));
+	nt->task_descs = malloc(nt->task_count * sizeof(char *));
+	nt->task_dones = malloc(nt->task_count * sizeof(bool));
+	nt->task_pids = malloc(nt->task_count * sizeof(db_pid));
 
 	tid_col = PQfnumber(res, TASK_TID_COL);
 	desc_col = PQfnumber(res, TASK_DESC_COL);
@@ -427,11 +428,11 @@ static inline int cleanup_state(struct tack_state **s)
 static inline query_status fetch_db(PGconn *conn, struct tack_state *s)
 {
 	query_status status = SUCCESS;
-	struct categories new_categories;
-	struct projects new_projects;
-	struct languages new_languages;
-	struct pl_pairs new_pl_pairs;
-	struct tasks new_tasks;
+	struct categories new_categories = { 0 };
+	struct projects new_projects = { 0 };
+	struct languages new_languages = { 0 };
+	struct pl_pairs new_pl_pairs = { 0 };
+	struct tasks new_tasks = { 0 };
 	/* @TODO START */
 	fetch_categories(conn, &new_categories);
 	fetch_projects(conn, &new_projects);
@@ -473,11 +474,20 @@ static inline query_status fetch_db(PGconn *conn, struct tack_state *s)
 void *db_worker(void *arg)
 {
 	struct tack_state *s = (struct tack_state *)arg;
+	log_error(BCKEND, "Worker Thread Started");
 	PGconn *conn = PQconnectdb("dbname=postgres");
 
 	/* @TODO1 */
-	if (is_connection_up(conn, &s) == false)
+	if (is_connection_up(conn, &s) == false) {
+		log_error(BCKEND, "Bootstrap Connection failed: %s",
+				  PQerrorMessage(conn));
+		pthread_mutex_lock(&s->lock);
+		s->state = STATE_IDLE;
+		pthread_mutex_unlock(&s->lock);
+		if (conn)
+			PQfinish(conn);
 		return NULL;
+	}
 
 	if (db_exists(conn) == false)
 		create_db(conn);
@@ -486,10 +496,19 @@ void *db_worker(void *arg)
 	PQfinish(conn);
 	conn = PQconnectdb("dbname=tack_db");
 
-	if (is_connection_up(conn, &s) == false)
+	if (is_connection_up(conn, &s) == false) {
+		log_error(BCKEND, "Main Connection failed: %s", PQerrorMessage(conn));
+		pthread_mutex_lock(&s->lock);
+		s->state = STATE_IDLE;
+		pthread_mutex_unlock(&s->lock);
+		if (conn)
+			PQfinish(conn);
 		return NULL;
+	}
 
+	PQexec(conn, "SET client_min_messages TO WARNING;");
 	create_schemas(conn);
+	log_error(BCKEND, "Schemas Verified, starting hydration");
 
 	pthread_mutex_lock(&s->lock);
 	while (s->is_running) {
@@ -525,5 +544,6 @@ lock:
 	}
 	pthread_mutex_unlock(&s->lock);
 	PQfinish(conn);
+	log_error(BCKEND, "Worker Thread Exiting");
 	return NULL;
 }

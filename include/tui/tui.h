@@ -14,8 +14,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
+/* clang-format off */
 #ifndef _TUI_H
-#define _TUI_H
+#  define _TUI_H
+/* clang-format on */
 #include <notcurses/notcurses.h>
 #include <state/state.h>
 
@@ -28,6 +30,14 @@ enum ui_focus {
 
 typedef uint8_t ui_col;
 typedef uint64_t ui_selected;
+
+/* clang-format off */
+#  ifndef _TUI_KEYS
+#    define _TUI_KEYS
+#    define KEY_ENTER_NL '\n'
+#    define KEY_ENTER_CR '\r'
+#  endif
+/* clang-format on */
 
 extern struct notcurses *init_tui(void);
 

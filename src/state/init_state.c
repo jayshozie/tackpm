@@ -20,11 +20,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
 static inline void set_state(struct tack_state **s)
 {
-    memset((*s), 0, sizeof(struct tack_state));
+	memset((*s), 0, sizeof(struct tack_state));
 
-    /* global */
+	/* global */
 	(*s)->is_running = true;
-    // (*s)->is_db_up = false;
+	(*s)->is_db_up = true;
 	(*s)->state = STATE_HYDR;
 }
 
@@ -32,14 +32,14 @@ int init_state(struct tack_state *s)
 {
 	int status = 0;
 
-    set_state(&s);
+	set_state(&s);
 
-    status = pthread_cond_init(&s->cond, NULL);
+	status = pthread_cond_init(&s->cond, NULL);
 	if (status != 0)
-        return status;
-    status = pthread_mutex_init(&s->lock, NULL);
+		return status;
+	status = pthread_mutex_init(&s->lock, NULL);
 	if (status != 0)
-        return status;
-    status = pthread_create(&s->db_thread, NULL, db_worker, s);
-    return status;
+		return status;
+	status = pthread_create(&s->db_thread, NULL, db_worker, s);
+	return status;
 }

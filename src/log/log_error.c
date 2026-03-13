@@ -17,23 +17,37 @@ along with this program. If not, see <https://www.gnu.org/licenses/>. */
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <time.h>
 #include <log/log.h>
 
 void log_error(enum module module, char *errmsg, ...)
 {
 	const char *module_name;
 	va_list args;
-	char *msg = NULL;
+	FILE *log_file;
+	time_t rawtime;
+	struct tm *timeinfo;
+	char timestamp[20];
+
 	if (!errmsg || !module)
 		return;
 
-	va_start(args, errmsg);
+	/* Using /tmp to ensure writability for diagnostics */
+	log_file = fopen("/tmp/tack.log", "a");
+	if (!log_file)
+		return;
+
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", timeinfo);
+
 	module_name = get_module_name(module);
-	vasprintf(&msg, errmsg, args);
+
+	fprintf(log_file, "[%s] [TACK]: [%s]: ", timestamp, module_name);
+	va_start(args, errmsg);
+	vfprintf(log_file, errmsg, args);
 	va_end(args);
-    if (msg) {
-        fprintf(stderr, "[TACK]: [%s]: %s\n", module_name, msg);
-		free(msg);
-    }
-	return;
+	fprintf(log_file, "\n");
+
+	fclose(log_file);
 }

@@ -38,6 +38,7 @@ int main(void)
 	}
 
 	tui(nc, &state); // main loop is inside tui()
+	notcurses_stop(nc);
 
 	pthread_join(state.db_thread, NULL);
 	return 0;

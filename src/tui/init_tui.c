@@ -18,19 +18,19 @@ along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
 static inline void init_options(struct notcurses_options *opts)
 {
-    opts->flags = NCOPTION_SUPPRESS_BANNERS;
-    opts->loglevel = NCLOGLEVEL_SILENT;
+	opts->flags = NCOPTION_SUPPRESS_BANNERS;
+	opts->loglevel = NCLOGLEVEL_SILENT;
 }
 
 struct notcurses *init_tui(void)
 {
-    struct notcurses *nc;
-    struct notcurses_options opts = {0};
-    init_options(&opts);
+	struct notcurses *nc;
+	struct notcurses_options opts = { 0 };
+	init_options(&opts);
 
-    nc = notcurses_init(&opts, NULL);
-    if (nc == NULL)
-        return NULL;
+	nc = notcurses_init(&opts, NULL);
+	if (nc == NULL)
+		return NULL;
 
-    return nc;
+	return nc;
 }

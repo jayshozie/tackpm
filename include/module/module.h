@@ -14,22 +14,24 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
+/* clang-format off */
 #ifndef _MODULE_H
-# define _MODULE_H
+#  define _MODULE_H
+/* clang-format on */
 #include <stdint.h>
 
 enum module {
-    LOG,
-    BCKEND,
-    MENU,
-    MAIN,
-    STATE,
-    OTHER,
+	LOG,
+	BCKEND,
+	MENU,
+	MAIN,
+	STATE,
+	OTHER,
 };
 
 struct Module {
-    enum module id;
-    char *name;
+	enum module id;
+	char *name;
 };
 
 extern char *get_module_name(enum module module_id);
