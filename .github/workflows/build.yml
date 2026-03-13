@@ -1,0 +1,35 @@
+name: CI Build Pipeline
+on:
+  pull_request:
+    branches: [ "main" ]
+jobs:
+  container-job:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Fetch Repository Code
+        uses: actions/checkout@v4
+      - name: Get Dependencies
+        run: |
+          sudo apt-get -y update
+          sudo apt install -y libpq-dev
+          sudo apt install -y make gcc pkg-config
+          sudo apt install -y libnotcurses-dev
+      - name: Execute build and static analysis
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: postgres
+        run: |
+          make clean && make debug
+          make clean && make release
+          make clean && make check
