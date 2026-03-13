@@ -75,7 +75,7 @@ quotes to single quotes, etc.
 6. **docs:** If your commit only touches the `docs/` directory, use this.
 7. **test:** If your commit is adding/changing the tests (which don't exist
 yet), use this.
-8. **config:** If your commit changes stuff in the `.clang-formact` file,
+8. **config:** If your commit changes stuff in the `.clang-format` file,
 `.gitignore` file, or adds a GitHub Actions YAML file, etc. then use this.
 
 #### Currently Available Scopes:
