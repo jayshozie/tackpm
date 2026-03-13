@@ -22,7 +22,7 @@ jobs:
         run: |
           sudo apt-get -y update
           sudo apt install -y libpq-dev
-          sudo apt install -y make gcc pkg-config
+          sudo apt install -y make gcc pkg-config clang-tidy
           sudo apt install -y libnotcurses-dev
       - name: Execute build and static analysis
         env:

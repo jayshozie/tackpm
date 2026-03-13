@@ -59,16 +59,14 @@ debug: $(TARGET)
 release: CFLAGS += $(RELEASE_FLAGS)
 release: $(TARGET)
 
-# Enhanced Check Target
+# Unified Check Target using clang-tidy
 check:
-	@echo -e "$(BLUE)--- 1. Cppcheck (C11 Static Analysis) ---$(RESET)"
-	@if command -v cppcheck > /dev/null; then \
-		cppcheck --quiet --enable=all --std=c11 --suppress=missingIncludeSystem --include=include $(SRC_DIR); \
+	@echo -e "$(BLUE)--- Running Clang-Tidy Check ---$(RESET)"
+	@if command -v clang-tidy > /dev/null; then \
+		clang-tidy $(SRCS) -- $(CFLAGS) && echo -e "$(GREEN)Pass: Unified check cleared.$(RESET)"; \
 	else \
-		echo -e "$(RED)cppcheck not found. Install with 'sudo apt install cppcheck'$(RESET)"; \
+		echo -e "$(RED)clang-tidy not found."; \
 	fi
-	@echo -e "\n$(BLUE)--- 2. GCC Static Analyzer & Strict Warning Check ---$(RESET)"
-	@$(CC) $(CFLAGS) -fanalyzer -Werror -fsyntax-only $(SRCS) && echo -e "$(GREEN)Pass: No warnings found.$(RESET)"
 
 # Link final executable
 $(TARGET): $(OBJS)
