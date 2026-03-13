@@ -47,7 +47,7 @@ help:
 	@echo -e "  $(GREEN)all$(RESET)     : Default target (builds release)"
 	@echo -e "  $(GREEN)debug$(RESET)   : Build with debug symbols and no optimization"
 	@echo -e "  $(GREEN)release$(RESET) : Build with optimizations and no debug symbols"
-	@echo -e "  $(GREEN)check$(RESET)   : Run static analysis and strict compiler warning checks"
+	@echo -e "  $(GREEN)check$(RESET)   : Run code analysis"
 	@echo -e "  $(GREEN)clean$(RESET)   : Remove compiled object files and the target executable"
 	@echo -e "  $(GREEN)help$(RESET)    : Show this help message"
 
@@ -63,7 +63,7 @@ release: $(TARGET)
 check:
 	@echo -e "$(BLUE)--- Running Clang-Tidy Check ---$(RESET)"
 	@if command -v clang-tidy > /dev/null; then \
-		clang-tidy $(SRCS) -- $(CFLAGS) && echo -e "$(GREEN)Pass: Unified check cleared.$(RESET)"; \
+		clang-tidy $(SRCS) -warnings-as-errors='*' -- $(CFLAGS) && echo -e "$(GREEN)Pass: Check cleared.$(RESET)"; \
 	else \
 		echo -e "$(RED)clang-tidy not found."; \
 	fi
